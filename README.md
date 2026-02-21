@@ -1,1 +1,1 @@
-# automatické klikání
+# Auto Clicker
