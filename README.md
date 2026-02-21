@@ -1,0 +1,1 @@
+# automatické klikání
