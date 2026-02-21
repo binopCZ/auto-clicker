@@ -2,9 +2,9 @@
   "manifest_version": 3,
   "name": "Auto Clicker",
   "version": "1.0.0",
-  "author": "Binopß",
+  "author": "Binop",
   "description": "Automatic clicker with adjustable speed and click count",
-  "homepage_url": "https://github.com/jakubsulc/auto-clicker",
+  "homepage_url": "",
   "permissions": [
     "activeTab",
     "scripting",
