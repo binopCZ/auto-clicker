@@ -1,260 +1,238 @@
 (function() {
-  let isRunning = false;
-  let clickInterval = null;
-  let clickCount = 0;
-  let maxClicks = null;
-  let intervalMs = 200;
-  let stopKey = "e";
+    let isRunning = false;
+    let clickInterval = null;
+    let clickCount = 0;
+    let intervalMs = 200;
+    let stopKey = "e";
+    let startKey = "p"; 
+    let panel = null;
+    let countDisplay = null;
+    let intervalInput = null;
+    let startButton = null;
+    let stopButton = null;
+    let statusText = null;
+    let themeToggle = null;
+    let themeLabel = null;
+    let panelActive = false;
 
-  let panel = null;
-  let countDisplay = null;
-  let speedDisplay = null;
-  let intervalInput = null;
-  let startButton = null;
-  let stopButton = null;
-  let statusText = null;
-  let themeToggle = null;
-  let themeLabel = null;
-
-  // zda je panel aktivní (zobrazený)
-  let panelActive = false;
-
-  // drag state
-  let isDragging = false;
-  let dragOffsetX = 0;
-  let dragOffsetY = 0;
-
-  // Cursor position
-  let mouseX = window.innerWidth / 2;
-  let mouseY = window.innerHeight / 2;
-
-  document.addEventListener("mousemove", (e) => {
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-  });
-
-  // Load theme from storage
-  function loadTheme(callback) {
-    if (!chrome.storage || !chrome.storage.sync) {
-      callback("dark");
-      return;
-    }
-    chrome.storage.sync.get({ acTheme: "dark" }, (data) => {
-      callback(data.acTheme || "dark");
-    });
-  }
-
-  function saveTheme(theme) {
-    if (!chrome.storage || !chrome.storage.sync) return;
-    chrome.storage.sync.set({ acTheme: theme });
-  }
-
-  function applyTheme(theme) {
-    if (!panel) return;
-    panel.dataset.theme = theme;
-    if (themeLabel) {
-      themeLabel.textContent = theme === "dark" ? "Dark" : "Light";
-    }
-  }
-
-  // Panel in the bottom-right corner – created after show_panel
-  function createPanel() {
-    if (panel) {
-      panel.style.display = "block";
-      panelActive = true;
-      return;
-    }
-
-    panel = document.createElement("div");
-    panel.id = "ac-panel";
-    panel.innerHTML = `
-      <div id="ac-header">
-        <div id="ac-title">Auto Clicker</div>
-        <div id="ac-theme-toggle">
-          <span id="ac-theme-label">Dark</span>
-          <span id="ac-theme-knob"></span>
-        </div>
-        <div id="ac-close">×</div>
-      </div>
-      <div id="ac-body">
-        <div id="ac-status">Ready</div>
-        <div id="ac-count">Clicks: 0</div>
-        <div id="ac-speed">
-          <input id="ac-interval" type="number" value="${intervalMs}" min="10" step="10"> ms
-        </div>
-        <div id="ac-controls">
-          <button id="ac-start">Start</button>
-          <button id="ac-stop" disabled>Stop</button>
-        </div>
-        <div id="ac-hint">
-          Press <kbd>P</kbd> to start, Press <kbd>${stopKey.toUpperCase()}</kbd> to stop
-        </div>
-      </div>
-    `;
-
-    document.body.appendChild(panel);
-    panelActive = true;
-
-    countDisplay = panel.querySelector("#ac-count");
-    speedDisplay = panel.querySelector("#ac-speed");
-    intervalInput = panel.querySelector("#ac-interval");
-    startButton = panel.querySelector("#ac-start");
-    stopButton = panel.querySelector("#ac-stop");
-    statusText = panel.querySelector("#ac-status");
-    themeToggle = panel.querySelector("#ac-theme-toggle");
-    themeLabel = panel.querySelector("#ac-theme-label");
-
-    const closeBtn = panel.querySelector("#ac-close");
-    closeBtn.addEventListener("click", () => {
-      panel.style.display = "none";
-      panelActive = false;
-    });
-
-    // dragging via header
-    const header = panel.querySelector("#ac-header");
-    header.addEventListener("mousedown", (e) => {
-      isDragging = true;
-      const rect = panel.getBoundingClientRect();
-      dragOffsetX = e.clientX - rect.left;
-      dragOffsetY = e.clientY - rect.top;
-      document.body.style.userSelect = "none";
-    });
-
+    // Sledování myši pro cíl klikání
+    let mouseX = window.innerWidth / 2;
+    let mouseY = window.innerHeight / 2;
+    
+    // Minimalistický globální listener (pouze aktualizuje souřadnice, nebrzdí prohlížeč)
     document.addEventListener("mousemove", (e) => {
-      if (!isDragging) return;
-      const x = e.clientX - dragOffsetX;
-      const y = e.clientY - dragOffsetY;
-      panel.style.left = x + "px";
-      panel.style.top = y + "px";
-      panel.style.right = "auto";
-      panel.style.bottom = "auto";
+        mouseX = e.clientX;
+        mouseY = e.clientY;
     });
 
-    document.addEventListener("mouseup", () => {
-      if (!isDragging) return;
-      isDragging = false;
-      document.body.style.userSelect = "";
+    // Proměnné pro Drag & Drop
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let panelStartX = 0;
+    let panelStartY = 0;
+
+    // Funkce pro tažení panelu
+    function onDragMove(e) {
+        e.preventDefault();
+        const dx = e.clientX - dragStartX;
+        const dy = e.clientY - dragStartY;
+        panel.style.left = (panelStartX + dx) + "px";
+        panel.style.top = (panelStartY + dy) + "px";
+    }
+
+    // Funkce pro puštění panelu
+    function onDragEnd() {
+        // Po puštění myši přestaneme zbytečně naslouchat událostem pohybu pro tažení
+        document.removeEventListener("mousemove", onDragMove);
+        document.removeEventListener("mouseup", onDragEnd);
+        const header = document.getElementById("ac-header");
+        if (header) header.style.cursor = "grab";
+    }
+
+    function loadTheme(callback) {
+        if (!chrome.storage || !chrome.storage.sync) {
+            callback("dark");
+            return;
+        }
+        chrome.storage.sync.get({ acTheme: "dark" }, (data) => {
+            callback(data.acTheme || "dark");
+        });
+    }
+
+    function saveTheme(theme) {
+        if (!chrome.storage || !chrome.storage.sync) return;
+        chrome.storage.sync.set({ acTheme: theme });
+    }
+
+    function applyTheme(theme) {
+        if (!panel) return;
+        panel.dataset.theme = theme;
+        if (themeLabel) {
+            themeLabel.textContent = theme === "dark" ? "Dark" : "Light";
+        }
+    }
+
+    function createPanel() {
+        if (panel) {
+            panel.style.display = "block";
+            panelActive = true;
+            return;
+        }
+
+        panel = document.createElement("div");
+        panel.id = "ac-panel";
+        panel.innerHTML = `
+            <div id="ac-header" style="cursor: grab; user-select: none;">
+                <div id="ac-title">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: #22c55e;"><circle cx="12" cy="12" r="10"></circle><path d="M12 8v4l3 3"></path></svg>
+                    <span>AUTO CLICKER</span>
+                </div>
+                <div id="ac-close" style="cursor: pointer;">&times;</div>
+            </div>
+            <div id="ac-body">
+                <div id="ac-status">Status: <span id="ac-status-text">Ready</span></div>
+                <div id="ac-count">Clicks: <span id="ac-count-num">0</span></div>
+                <div id="ac-speed">
+                    Speed: <input type="number" id="ac-interval" value="200" min="10"> ms
+                </div>
+                <div id="ac-controls">
+                    <button id="ac-start">START</button>
+                    <button id="ac-stop" disabled>STOP</button>
+                </div>
+                <div id="ac-hint">Press <kbd>P</kbd> to start, <kbd>E</kbd> to stop</div>
+                
+                <div class="ac-divider"></div>
+                <div class="ac-footer">
+                    <div class="ac-footer-info">
+                        <span class="ac-badge">v1.0.0</span>
+                        <div class="ac-credits">
+                            CREATED BY <span class="ac-brand">BINOP</span>
+                        </div>
+                    </div>
+                    <div id="ac-theme-toggle">
+                        <div id="ac-theme-knob"></div>
+                        <span id="ac-theme-label">Dark</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(panel);
+        panelActive = true;
+
+        statusText = document.getElementById("ac-status-text");
+        countDisplay = document.getElementById("ac-count-num");
+        intervalInput = document.getElementById("ac-interval");
+        startButton = document.getElementById("ac-start");
+        stopButton = document.getElementById("ac-stop");
+        themeToggle = document.getElementById("ac-theme-toggle");
+        themeLabel = document.getElementById("ac-theme-label");
+        const header = document.getElementById("ac-header");
+
+        loadTheme((t) => applyTheme(t));
+
+        // Nastavení Drag & Drop POUZE po stisku tlačítka myši
+        header.addEventListener("mousedown", (e) => {
+            if (e.target.id === "ac-close") return;
+
+            dragStartX = e.clientX;
+            dragStartY = e.clientY;
+
+            const rect = panel.getBoundingClientRect();
+            panelStartX = rect.left;
+            panelStartY = rect.top;
+
+            panel.style.right = "auto";
+            panel.style.bottom = "auto";
+            panel.style.left = panelStartX + "px";
+            panel.style.top = panelStartY + "px";
+            panel.style.margin = "0";
+
+            header.style.cursor = "grabbing";
+
+            // Listenery pro tažení aktivujeme až nyní
+            document.addEventListener("mousemove", onDragMove);
+            document.addEventListener("mouseup", onDragEnd);
+        });
+
+        document.getElementById("ac-close").onclick = () => {
+            stopClicking(); 
+            panel.style.display = "none";
+            panelActive = false;
+        };
+
+        themeToggle.onclick = () => {
+            const current = panel.dataset.theme;
+            const next = current === "dark" ? "light" : "dark";
+            applyTheme(next);
+            saveTheme(next);
+        };
+
+        startButton.onclick = startClicking;
+        stopButton.onclick = stopClicking;
+
+        intervalInput.onchange = () => {
+            intervalMs = parseInt(intervalInput.value) || 200;
+        };
+    }
+
+    function startClicking() {
+        if (isRunning) return;
+        isRunning = true;
+        startButton.disabled = true;
+        stopButton.disabled = false;
+        statusText.textContent = "Running...";
+        statusText.style.color = "#22c55e";
+
+        clickInterval = setInterval(() => {
+            const el = document.elementFromPoint(mouseX, mouseY);
+            if (el) {
+                // Konfigurace pro bublající události, které projdou celým DOMem
+                const eventProps = {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    clientX: mouseX,
+                    clientY: mouseY
+                };
+                
+                // Nasimulujeme reálnou sekvenci kliknutí (Pointer + Mouse Events)
+                el.dispatchEvent(new PointerEvent('pointerdown', eventProps));
+                el.dispatchEvent(new MouseEvent('mousedown', eventProps));
+                el.dispatchEvent(new PointerEvent('pointerup', eventProps));
+                el.dispatchEvent(new MouseEvent('mouseup', eventProps));
+                el.dispatchEvent(new MouseEvent('click', eventProps));
+
+                clickCount++;
+                countDisplay.textContent = clickCount;
+            }
+        }, intervalMs);
+    }
+
+    function stopClicking() {
+        if (!isRunning) return;
+        isRunning = false;
+        clearInterval(clickInterval);
+        startButton.disabled = false;
+        stopButton.disabled = true;
+        statusText.textContent = "Stopped";
+        statusText.style.color = "#ef4444";
+    }
+
+    document.addEventListener("keydown", (e) => {
+        if (!panelActive) return;
+
+        // Zabrání spuštění/vypnutí, pokud zrovna píšeš do inputu (např. upravuješ rychlost)
+        if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
+        
+        if (e.key.toLowerCase() === stopKey && isRunning) {
+            stopClicking();
+        } else if (e.key.toLowerCase() === startKey && !isRunning) {
+            startClicking();
+        }
     });
 
-    startButton.addEventListener("click", startAutoClick);
-    stopButton.addEventListener("click", stopAutoClick);
-
-    if (themeToggle) {
-      themeToggle.addEventListener("click", () => {
-        const newTheme = panel.dataset.theme === "light" ? "dark" : "light";
-        applyTheme(newTheme);
-        saveTheme(newTheme);
-      });
-    }
-
-    loadTheme((theme) => {
-      applyTheme(theme);
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.action === "show_panel") createPanel();
     });
-
-    updateUI();
-  }
-
-  function updateCount() {
-    if (countDisplay) {
-      countDisplay.textContent = "Clicks: " + clickCount;
-    }
-  }
-
-  function updateSpeed() {
-    if (intervalInput) {
-      intervalInput.value = intervalMs;
-    }
-  }
-
-  function updateStatus(text) {
-    if (statusText) {
-      statusText.textContent = text;
-    }
-  }
-
-  function updateUI() {
-    if (!startButton || !stopButton) return;
-    startButton.disabled = isRunning;
-    stopButton.disabled = !isRunning;
-    updateCount();
-    updateSpeed();
-    updateStatus(isRunning ? "Running" : "Ready");
-  }
-
-  // Click at current cursor position
-  function performClick() {
-    const el = document.elementFromPoint(mouseX, mouseY);
-    if (!el) return;
-
-    const options = {
-      bubbles: true,
-      cancelable: true,
-      view: window,
-      button: 0,
-      clientX: mouseX,
-      clientY: mouseY,
-    };
-
-    const down = new MouseEvent("mousedown", options);
-    const up = new MouseEvent("mouseup", options);
-    const click = new MouseEvent("click", options);
-
-    el.dispatchEvent(down);
-    el.dispatchEvent(up);
-    el.dispatchEvent(click);
-  }
-
-  function startAutoClick() {
-    if (isRunning) return;
-
-    if (intervalInput) {
-      const v = parseInt(intervalInput.value, 10);
-      if (!isNaN(v) && v >= 10) {
-        intervalMs = v;
-      }
-    }
-
-    isRunning = true;
-    clickCount = 0;
-    updateUI();
-
-    clickInterval = setInterval(() => {
-      if (maxClicks !== null && clickCount >= maxClicks) {
-        stopAutoClick();
-        return;
-      }
-      performClick();
-      clickCount++;
-      updateCount();
-    }, intervalMs);
-  }
-
-  function stopAutoClick() {
-    if (!isRunning) return;
-    isRunning = false;
-    clearInterval(clickInterval);
-    clickInterval = null;
-    updateUI();
-  }
-
-  // Start with key P, stop with key E – jen když je panel aktivní
-  document.addEventListener("keydown", (e) => {
-    if (!panelActive) return;
-
-    const key = e.key.toLowerCase();
-
-    if (key === "p") {
-      startAutoClick();
-    } else if (key === stopKey.toLowerCase()) {
-      stopAutoClick();
-    }
-  });
-
-  // Listener for message from popup
-  chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.action === "show_panel") {
-      createPanel();
-    }
-  });
 })();
-
