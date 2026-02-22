@@ -2,191 +2,101 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Auto Clicker</title>
+
+    <!-- Reuse the same Aurora Glass UI as the in-page panel -->
+    <link rel="stylesheet" href="styles.css" />
+
+    <!-- Popup-only overrides -->
     <style>
-      :root {
-        --bg: #0f172a;
-        --surface: #1e293b;
-        --border: #334155;
-        --text-main: #f8fafc;
-        --text-muted: #94a3b8;
-        --accent: #22c55e;
-        --accent-hover: #16a34a;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
+      html, body {
         margin: 0;
-        padding: 16px;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          Roboto, sans-serif;
-        background: var(--bg);
-        color: var(--text-main);
-        width: 240px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 16px;
+        padding: 0;
+        width: 292px; 
+        background: transparent;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       }
-
-      .header {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        width: 100%;
-        padding-bottom: 12px;
-        border-bottom: 1px solid var(--border);
-      }
-
-      .header svg {
-        color: var(--accent);
-      }
-
-      .header h1 {
-        margin: 0;
-        font-size: 16px;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-      }
-
-      .info-text {
-        font-size: 13px;
-        color: var(--text-muted);
-        text-align: center;
-        line-height: 1.4;
+      #ac-panel {
+        position: relative;
+        bottom: auto;
+        right: auto;
+        inset: auto;
         margin: 0;
       }
-
-      button#open-panel {
-        width: 100%;
-        padding: 10px 16px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #000;
-        background-color: var(--accent);
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 8px;
-      }
-
-      button#open-panel:hover {
-        background-color: var(--accent-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(34, 197, 94, 0.35);
-      }
-
-      button#open-panel:active {
-        transform: translateY(1px);
-        box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2);
-      }
-
-      .footer {
-        display: flex;
-        justify-content: space-between;
-        width: 100%;
-        margin-top: 4px;
-        font-size: 11px;
-        color: var(--text-muted);
-      }
-
-      .brand {
-        color: var(--accent);
-        font-weight: 600;
-        letter-spacing: 0.5px;
-      }
-
-      .footer a.footer-link {
-        color: var(--accent);
-        text-decoration: none;
-        font-weight: 500;
-        margin-left: 4px;
-      }
-
-      .footer a.footer-link:hover {
-        text-decoration: underline;
-      }
+      #ac-close { display: none; }
+      #ac-panel a { color: inherit; }
     </style>
-    <script src="popup.js"></script>
+
+    <script src="popup.js" defer></script>
   </head>
+
   <body>
-    <!-- Hlavicka -->
-    <div class="header">
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path
-          d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"
-        ></path>
-        <path
-          d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"
-        ></path>
-        <path d="M12 2v2"></path>
-        <path d="M12 20v2"></path>
-        <path d="m4.93 4.93 1.41 1.41"></path>
-        <path d="m17.66 17.66 1.41 1.41"></path>
-        <path d="M2 12h2"></path>
-        <path d="M20 12h2"></path>
-        <path d="m6.34 17.66-1.41 1.41"></path>
-        <path d="m19.07 4.93-1.41 1.41"></path>
-      </svg>
-      <h1>Auto Clicker</h1>
-    </div>
+    <div id="ac-panel" data-theme="dark">
+      <!-- Header -->
+      <div id="ac-header">
+        <div id="ac-title">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"></path>
+            <path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"></path>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+            <path d="m4.93 4.93 1.41 1.41"></path>
+            <path d="m17.66 17.66 1.41 1.41"></path>
+            <path d="M2 12h2"></path>
+            <path d="M20 12h2"></path>
+            <path d="m6.34 17.66-1.41 1.41"></path>
+            <path d="m19.07 4.93-1.41 1.41"></path>
+          </svg>
+          <span>Auto Clicker</span>
+        </div>
 
-    <!-- Popisek -->
-    <p class="info-text">
-      Open the control panel on this page to manage clicking.
-    </p>
+        <div id="ac-header-right">
+          <!-- Professional UI Toggle Switch -->
+          <div id="ac-theme-toggle" role="switch" title="Toggle Theme">
+            <div id="ac-theme-knob"></div>
+          </div>
+        </div>
+      </div>
 
-    <!-- Hlavní tlačítko (ID musí zůstat kvůli popup.js) -->
-    <button id="open-panel">
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.5"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-        <path d="M9 3v18"></path>
-        <path d="m14 9 3 3-3 3"></path>
-      </svg>
-      Open Panel
-    </button>
+      <!-- Body -->
+      <div id="ac-body">
+        <!-- Removed "Panel: Ready" status row for the popup -->
 
-    <!-- Patička -->
-    <div class="footer">
-      <span>v1.0.1</span>
-      <span>
-        By <span class="brand">BINOP</span>
-        ·
-        <a
-          href="https://binopcz.github.io/autoclicker-web/"
-          class="footer-link"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Website
-        </a>
-      </span>
+        <p class="info-text" style="margin: 0 0 8px; color: var(--muted); font-size: 12px; line-height: 1.35; text-align: center;">
+          Open the control panel on the current tab to start clicking.
+        </p>
+
+        <!-- Main button -->
+        <button class="ac-pos-btn" id="open-panel" type="button">
+          Open Panel Here
+        </button>
+
+        <div class="ac-divider"></div>
+
+        <div class="ac-footer">
+          <span class="ac-badge">v1.1.1</span>
+          <span class="ac-credits">
+            By <span class="ac-brand">BINOP</span>
+            ·
+            <!-- Improved Website Link -->
+            <a href="https://binopcz.github.io/autoclicker-web/" target="_blank" rel="noopener noreferrer" class="ac-footer-link">
+              Website
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          </span>
+        </div>
+      </div>
     </div>
   </body>
 </html>
