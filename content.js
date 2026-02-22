@@ -70,6 +70,12 @@
         if (themeLabel) {
             themeLabel.textContent = theme === "dark" ? "Dark" : "Light";
         }
+        
+        // Změna barvy horního popisku podle režimu, aby nebyl tmavý
+        const hintTitle = document.getElementById("ac-hint-title");
+        if (hintTitle) {
+            hintTitle.style.color = theme === "dark" ? "#cbd5e1" : "#4b5563";
+        }
     }
 
     function createPanel() {
@@ -99,12 +105,27 @@
                     <button id="ac-start">START</button>
                     <button id="ac-stop" disabled>STOP</button>
                 </div>
-                <div id="ac-hint">Press <kbd>P</kbd> to start, <kbd>E</kbd> to stop</div>
+                
+                <div id="ac-hint" style="color: currentColor;">
+                    <div id="ac-hint-title" style="font-size: 11px; margin-bottom: 8px; text-align: center; font-weight: 500;">
+                        Press combination to control clicking:
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
+                            <span style="font-weight: 600; font-size: 13px; width: 40px; text-align: right;">Start:</span> 
+                            <span style="display: flex; gap: 4px; align-items: center;"><kbd>Ctrl</kbd> + <kbd>P</kbd></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-left: 20px;">
+                            <span style="font-weight: 600; font-size: 13px; width: 40px; text-align: right;">Stop:</span> 
+                            <span style="display: flex; gap: 4px; align-items: center;"><kbd>Ctrl</kbd> + <kbd>E</kbd></span>
+                        </div>
+                    </div>
+                </div>
                 
                 <div class="ac-divider"></div>
                 <div class="ac-footer">
                     <div class="ac-footer-info">
-                        <span class="ac-badge">v1.0.0</span>
+                        <span class="ac-badge">v1.0.1</span>
                         <div class="ac-credits">
                             CREATED BY <span class="ac-brand">BINOP</span>
                         </div>
@@ -225,9 +246,13 @@
         // Zabrání spuštění/vypnutí, pokud zrovna píšeš do inputu (např. upravuješ rychlost)
         if (document.activeElement && (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA")) return;
         
-        if (e.key.toLowerCase() === stopKey && isRunning) {
+        const key = e.key.toLowerCase();
+        
+        if (e.ctrlKey && key === stopKey && isRunning) {
+            e.preventDefault();
             stopClicking();
-        } else if (e.key.toLowerCase() === startKey && !isRunning) {
+        } else if (e.ctrlKey && key === startKey && !isRunning) {
+            e.preventDefault();
             startClicking();
         }
     });
