@@ -44,6 +44,7 @@
   // Cookie Clicker detection
   const isCookieClicker = location.hostname === "orteil.dashnet.org" && location.pathname.includes("cookieclicker");
   let ccActive = false;
+  let isFixedOnBigCookie = false;
 
   function setStatus(msg, color) {
     if (!statusText) return;
@@ -124,6 +125,40 @@
     btn.textContent = activeFixed ? "Position STOP" : "Position START";
   }
 
+  // Check if we dropped the target on the big cookie
+  function checkBigCookie(x, y) {
+    if (!isCookieClicker) return false;
+    
+    // Hide our UI temporarily to see what is underneath
+    let prevIndicatorDisplay = "none";
+    if (targetIndicator) {
+      prevIndicatorDisplay = targetIndicator.style.display;
+      targetIndicator.style.display = "none";
+    }
+    let prevPanelDisplay = "none";
+    if (panel) {
+      prevPanelDisplay = panel.style.display;
+      panel.style.display = "none";
+    }
+
+    const els = document.elementsFromPoint(x, y);
+    let found = false;
+    if (els && els.length) {
+      for (const el of els) {
+        if (el && el.id === "bigCookie") {
+          found = true;
+          break;
+        }
+      }
+    }
+
+    // Restore UI
+    if (targetIndicator) targetIndicator.style.display = prevIndicatorDisplay;
+    if (panel) panel.style.display = prevPanelDisplay;
+
+    return found;
+  }
+
   function lockPosition(x, y) {
     fixedX = x;
     fixedY = y;
@@ -132,12 +167,16 @@
     targetIndicator.style.display = "block";
     moveIndicator(x, y);
     if (targetBtn) targetBtn.classList.add("active");
+    
+    isFixedOnBigCookie = checkBigCookie(x, y);
+
     updatePositionLabel();
     updatePositionStartState();
   }
 
   function unlockPosition() {
     positionLocked = false;
+    isFixedOnBigCookie = false;
     ensureTargetIndicator();
     targetIndicator.style.display = "none";
     if (targetBtn) targetBtn.classList.remove("active");
@@ -258,18 +297,27 @@
 
   function dispatchClick(el, x, y) {
     if (!el) return;
+
     const eventProps = {
       bubbles: true,
       cancelable: true,
       view: window,
       clientX: x,
-      clientY: y
+      clientY: y,
+      pointerId: 1,
+      pointerType: "mouse",
+      isPrimary: true,
+      button: 0,
+      buttons: 1
     };
+
     try {
       el.dispatchEvent(new PointerEvent("pointerdown", eventProps));
       el.dispatchEvent(new MouseEvent("mousedown", eventProps));
+      
       el.dispatchEvent(new PointerEvent("pointerup", eventProps));
       el.dispatchEvent(new MouseEvent("mouseup", eventProps));
+      
       el.dispatchEvent(new MouseEvent("click", eventProps));
     } catch (e) {
       try {
@@ -355,7 +403,7 @@
 
         <div class="ac-footer">
           <div class="ac-footer-info">
-            <span class="ac-badge">v1.1.1</span>
+            <span class="ac-badge">v1.1.2</span>
           </div>
           <div class="ac-credits">
             By <span class="ac-brand" style="margin-right: 4px;">BINOP</span>
@@ -455,6 +503,8 @@
 
   function startClicking() {
     if (isRunning) return;
+    clickCount = 0;
+    if (countDisplay) countDisplay.textContent = 0;
     isRunning = true;
     startButton.disabled = true;
     stopButton.disabled = false;
@@ -462,19 +512,19 @@
     setStatus(clickMode === "fixed" ? "Running (Position)" : "Running...", "#22c55e");
     updatePositionStartState();
 
-    const useCookieMain = isCookieClicker && (clickMode === "fixed" && positionLocked);
+    const useCookieMain = isCookieClicker && clickMode === "fixed" && positionLocked && isFixedOnBigCookie;
 
     if (useCookieMain) {
       ccStart(intervalMs);
+      
+      clickInterval = setInterval(() => {
+        clickCount++;
+        countDisplay.textContent = clickCount;
+      }, intervalMs);
+      
     } else {
       if (ccActive) ccStop();
       clickInterval = setInterval(() => {
-        if (useCookieMain) {
-          clickCount++;
-          countDisplay.textContent = clickCount;
-          return;
-        }
-
         let x, y;
         if (clickMode === "fixed") {
           if (!positionLocked) return;
@@ -534,4 +584,3 @@
     }
   });
 })();
-

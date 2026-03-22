@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auto Clicker",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "Binop",
   "description": "Automatic clicker with adjustable speed and live click counter",
   "homepage_url": "https://github.com/binopCZ/auto-clicker",
